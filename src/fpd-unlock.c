@@ -27,8 +27,7 @@
 #define FEEDBACKD_DBUS_PATH           "/org/sigxcpu/Feedback"
 #define FEEDBACKD_DBUS_INTERFACE      "org.sigxcpu.Feedback"
 
-#define SCREEN_ON_TIMEOUT 750
-#define UNLOCK_TIMEOUT    250
+#define UNLOCK_TIMEOUT    1000
 
 
 struct _FpdUnlockPrivate {
@@ -180,7 +179,7 @@ fpd_logind_proxy_seat_properties_cb (GDBusProxy *proxy,
             self->priv->idle_hint = g_variant_get_boolean (value);
             if (!self->priv->idle_hint)
                 self->priv->timeout_id = g_timeout_add (
-                    SCREEN_ON_TIMEOUT,
+                    UNLOCK_TIMEOUT,
                     (GSourceFunc) fpd_unlock_handle_unlocking,
                     self
                 );
