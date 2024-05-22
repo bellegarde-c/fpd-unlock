@@ -139,7 +139,6 @@ fpd_set_active_session (FpdUnlock *self)
     g_autoptr(GError) error = NULL;
     g_autoptr(GVariant) value = NULL;
     g_autoptr (GVariantIter) iter;
-    const gchar *seat;
 
     value = g_dbus_proxy_call_sync (
         self->priv->logind_manager_proxy,
@@ -157,8 +156,8 @@ fpd_set_active_session (FpdUnlock *self)
 
     g_variant_get (value, "(a(susso))", &iter);
     while (g_variant_iter_loop (iter, "(susso)", &self->priv->session_id,
-                                NULL, NULL, &seat, &self->priv->session_path)) {
-        if (g_strcmp0 (seat, "seat0") == 0)
+                                NULL, NULL, NULL, &self->priv->session_path)) {
+        if (g_strcmp0 (self->priv->session_id, "c2") == 0)
             return;
     }
 
