@@ -191,10 +191,10 @@ on_fingerprint_proxy_signal (GDBusProxy  *proxy,
 }
 
 static void
-on_logind_proxy_seat_properties_changed (GDBusProxy *proxy,
-                                         GVariant   *changed_properties,
-                                         char      **invalidated_properties,
-                                         gpointer    user_data)
+on_logind_session_proxy_properties_changed (GDBusProxy *proxy,
+                                            GVariant   *changed_properties,
+                                            char      **invalidated_properties,
+                                            gpointer    user_data)
 {
     FpdUnlock *self = FPD_UNLOCK (user_data);
     GVariant *value;
@@ -324,7 +324,7 @@ fpd_unlock_init (FpdUnlock *self)
     g_signal_connect (
         self->priv->logind_session_proxy,
         "g-properties-changed",
-        G_CALLBACK (on_logind_proxy_seat_properties_changed),
+        G_CALLBACK (on_logind_session_proxy_properties_changed),
         self
     );
 }
