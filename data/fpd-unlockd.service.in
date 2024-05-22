@@ -3,6 +3,7 @@ Description=Unlock user session with org.droidian.fingerprint
 
 [Service]
 Type=exec
+ExecStartPre=/usr/bin/binder-wait android.hardware.biometrics.fingerprint@2.1::IBiometricsFingerprint/default
 ExecStart=@BIN_DIR@/fpd-unlockd
 
 [Install]
