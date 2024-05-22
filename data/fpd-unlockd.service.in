@@ -1,0 +1,9 @@
+[Unit]
+Description=Unlock user session with org.droidian.fingerprint
+
+[Service]
+Type=exec
+ExecStart=@BIN_DIR@/fpd-unlockd
+
+[Install]
+WantedBy=default.target
