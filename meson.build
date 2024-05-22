@@ -15,6 +15,7 @@ bindir = join_paths(get_option('prefix'), get_option('bindir'))
 config_h = configuration_data()
 config_h.set_quoted('PACKAGE_VERSION', meson.project_version())
 config_h.set('BIN_DIR', bindir)
+config_h.set('APP_ID', '"org.droidian.FpdUnlock"')
 
 configure_file(output: 'config.h', configuration: config_h)
 add_project_arguments(['-I' + meson.project_build_root()], language: 'c')
