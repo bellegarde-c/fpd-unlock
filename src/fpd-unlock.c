@@ -35,8 +35,11 @@ struct _FpdUnlockPrivate {
 
     const gchar *session_id;
     const gchar *session_path;
+
     gboolean idle_hint;
     gboolean locked_hint;
+
+    guint bus_timeout_id;
 };
 
 G_DEFINE_TYPE_WITH_CODE (
@@ -131,7 +134,7 @@ fpd_unlock_stop_unlocking (FpdUnlock *self)
 }
 
 static void
-fpd_get_active_session (FpdUnlock *self)
+fpd_set_active_session (FpdUnlock *self)
 {
     g_autoptr(GError) error = NULL;
     g_autoptr(GVariant) value = NULL;
@@ -156,8 +159,10 @@ fpd_get_active_session (FpdUnlock *self)
     while (g_variant_iter_loop (iter, "(susso)", &self->priv->session_id,
                                 NULL, NULL, &seat, &self->priv->session_path)) {
         if (g_strcmp0 (seat, "seat0") == 0)
-            break;
+            return;
     }
+
+    self->priv->session_id = NULL;
 }
 
 static void
@@ -218,10 +223,94 @@ on_logind_session_proxy_properties_changed (GDBusProxy *proxy,
     }
 }
 
+static gboolean
+fpd_wait_for_bus (FpdUnlock *self)
+{
+
+    if (self->priv->logind_manager_proxy == NULL)
+        self->priv->logind_manager_proxy =
+                    g_dbus_proxy_new_for_bus_sync (
+                        G_BUS_TYPE_SYSTEM,
+                        0,
+                        NULL,
+                        LOGIND_DBUS_NAME,
+                        LOGIND_DBUS_MANAGER_PATH,
+                        LOGIND_DBUS_MANAGER_INTERFACE,
+                        NULL,
+                        NULL
+                   );
+
+    g_return_val_if_fail (self->priv->logind_manager_proxy != NULL, TRUE);
+
+    if (self->priv->fingerprint_proxy == NULL)
+        self->priv->fingerprint_proxy =
+                    g_dbus_proxy_new_for_bus_sync (
+                        G_BUS_TYPE_SYSTEM,
+                        0,
+                        NULL,
+                        FINGERPRINT_DBUS_NAME,
+                        FINGERPRINT_DBUS_PATH,
+                        FINGERPRINT_DBUS_INTERFACE,
+                        NULL,
+                        NULL
+                   );
+
+    g_return_val_if_fail (self->priv->fingerprint_proxy != NULL, TRUE);
+
+    fpd_set_active_session (self);
+
+    g_return_val_if_fail (self->priv->session_id != NULL, TRUE);
+
+    if (self->priv->logind_session_proxy == NULL)
+        self->priv->logind_session_proxy =
+                    g_dbus_proxy_new_for_bus_sync (
+                        G_BUS_TYPE_SYSTEM,
+                        0,
+                        NULL,
+                        LOGIND_DBUS_NAME,
+                        self->priv->session_path,
+                        LOGIND_DBUS_SESSION_INTERFACE,
+                        NULL,
+                        NULL
+                   );
+
+    g_return_val_if_fail (self->priv->logind_session_proxy != NULL, TRUE);
+
+    self->priv->feedbackd_proxy =
+                g_dbus_proxy_new_for_bus_sync (
+                    G_BUS_TYPE_SESSION,
+                    0,
+                    NULL,
+                    FEEDBACKD_DBUS_NAME,
+                    FEEDBACKD_DBUS_PATH,
+                    FEEDBACKD_DBUS_INTERFACE,
+                    NULL,
+                    NULL
+               );
+
+    g_signal_connect (
+        self->priv->fingerprint_proxy,
+        "g-signal",
+        G_CALLBACK (on_fingerprint_proxy_signal),
+        self
+    );
+
+    g_signal_connect (
+        self->priv->logind_session_proxy,
+        "g-properties-changed",
+        G_CALLBACK (on_logind_session_proxy_properties_changed),
+        self
+    );
+
+    return FALSE;
+}
+
 static void
 fpd_unlock_dispose (GObject *fpd_unlock)
 {
     FpdUnlock *self = FPD_UNLOCK (fpd_unlock);
+
+    g_clear_handle_id (&self->priv->bus_timeout_id, g_source_remove);
 
     g_clear_object (&self->priv->logind_session_proxy);
     g_clear_object (&self->priv->logind_manager_proxy);
@@ -257,74 +346,14 @@ fpd_unlock_init (FpdUnlock *self)
     g_autoptr(GError) error = NULL;
 
     self->priv = fpd_unlock_get_instance_private (self);
+    self->priv->logind_session_proxy = NULL;
+    self->priv->logind_manager_proxy = NULL;
+    self->priv->fingerprint_proxy = NULL;
+    self->priv->feedbackd_proxy = NULL;
 
-    self->priv->logind_manager_proxy =
-                g_dbus_proxy_new_for_bus_sync (
-                    G_BUS_TYPE_SYSTEM,
-                    0,
-                    NULL,
-                    LOGIND_DBUS_NAME,
-                    LOGIND_DBUS_MANAGER_PATH,
-                    LOGIND_DBUS_MANAGER_INTERFACE,
-                    NULL,
-                    NULL
-               );
-
-    g_assert (self->priv->logind_manager_proxy != NULL);
-
-    self->priv->fingerprint_proxy =
-                g_dbus_proxy_new_for_bus_sync (
-                    G_BUS_TYPE_SYSTEM,
-                    0,
-                    NULL,
-                    FINGERPRINT_DBUS_NAME,
-                    FINGERPRINT_DBUS_PATH,
-                    FINGERPRINT_DBUS_INTERFACE,
-                    NULL,
-                    NULL
-               );
-
-    g_assert (self->priv->fingerprint_proxy != NULL);
-
-    fpd_get_active_session (self);
-
-    self->priv->logind_session_proxy =
-                g_dbus_proxy_new_for_bus_sync (
-                    G_BUS_TYPE_SYSTEM,
-                    0,
-                    NULL,
-                    LOGIND_DBUS_NAME,
-                    self->priv->session_path,
-                    LOGIND_DBUS_SESSION_INTERFACE,
-                    NULL,
-                    NULL
-               );
-
-    g_assert (self->priv->logind_session_proxy != NULL);
-
-    self->priv->feedbackd_proxy =
-                g_dbus_proxy_new_for_bus_sync (
-                    G_BUS_TYPE_SESSION,
-                    0,
-                    NULL,
-                    FEEDBACKD_DBUS_NAME,
-                    FEEDBACKD_DBUS_PATH,
-                    FEEDBACKD_DBUS_INTERFACE,
-                    NULL,
-                    NULL
-               );
-
-    g_signal_connect (
-        self->priv->fingerprint_proxy,
-        "g-signal",
-        G_CALLBACK (on_fingerprint_proxy_signal),
-        self
-    );
-
-    g_signal_connect (
-        self->priv->logind_session_proxy,
-        "g-properties-changed",
-        G_CALLBACK (on_logind_session_proxy_properties_changed),
+     self->priv->bus_timeout_id = g_timeout_add_seconds (
+        1,
+        (GSourceFunc) fpd_wait_for_bus,
         self
     );
 }
