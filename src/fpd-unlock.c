@@ -209,12 +209,14 @@ on_logind_session_proxy_properties_changed (GDBusProxy *proxy,
     while (g_variant_iter_next (&i, "{&sv}", &property, &value)) {
         if (g_strcmp0 (property, "IdleHint") == 0) {
             self->priv->idle_hint = g_variant_get_boolean (value);
+            g_message ("g_variant_iter_next: %b", self->priv->idle_hint);
             if (self->priv->idle_hint)
                 fpd_unlock_stop_unlocking (self);
             else
                 fpd_unlock_start_unlocking (self);
         } else if (g_strcmp0 (property, "LockedHint") == 0) {
             self->priv->locked_hint = g_variant_get_boolean (value);
+            g_message ("g_variant_iter_next: %b", self->priv->locked_hint);
             if (!self->priv->locked_hint)
                 fpd_unlock_stop_unlocking (self);
         }
@@ -225,7 +227,7 @@ on_logind_session_proxy_properties_changed (GDBusProxy *proxy,
 static gboolean
 fpd_wait_for_bus (FpdUnlock *self)
 {
-
+    g_message ("wait_for_bus");
     if (self->priv->logind_manager_proxy == NULL)
         self->priv->logind_manager_proxy =
                     g_dbus_proxy_new_for_bus_sync (
@@ -241,6 +243,7 @@ fpd_wait_for_bus (FpdUnlock *self)
 
     g_return_val_if_fail (self->priv->logind_manager_proxy != NULL, TRUE);
 
+    g_message ("wait_for_bus1");
     if (self->priv->fingerprint_proxy == NULL)
         self->priv->fingerprint_proxy =
                     g_dbus_proxy_new_for_bus_sync (
@@ -256,10 +259,12 @@ fpd_wait_for_bus (FpdUnlock *self)
 
     g_return_val_if_fail (self->priv->fingerprint_proxy != NULL, TRUE);
 
+    g_message ("wait_for_bus2");
     fpd_set_active_session (self);
 
     g_return_val_if_fail (self->priv->session_id != NULL, TRUE);
 
+    g_message ("wait_for_bus3");
     if (self->priv->logind_session_proxy == NULL)
         self->priv->logind_session_proxy =
                     g_dbus_proxy_new_for_bus_sync (
@@ -274,7 +279,7 @@ fpd_wait_for_bus (FpdUnlock *self)
                    );
 
     g_return_val_if_fail (self->priv->logind_session_proxy != NULL, TRUE);
-
+    g_message ("wait_for_bus4");
     self->priv->feedbackd_proxy =
                 g_dbus_proxy_new_for_bus_sync (
                     G_BUS_TYPE_SESSION,
