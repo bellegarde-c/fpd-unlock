@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+remove() {
+    rm -f /etc/systemd/user/fpdlistener.service
+}
+
+case "$1" in
+	"remove")
+		remove
+		;;
+esac

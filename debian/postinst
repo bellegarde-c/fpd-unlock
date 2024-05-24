@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+configure() {
+    systemctl --user --global mask fpdlistener.service
+}
+
+case "$1" in
+	"configure")
+		configure
+		;;
+esac
