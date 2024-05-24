@@ -178,20 +178,17 @@ on_fingerprint_proxy_signal (GDBusProxy  *proxy,
 
         g_variant_get (parameters, "(&s)", &finger);
 
-        g_message ("Auth by: %s", finger);
+        g_message ("Identified: %s", finger);
         fpd_unlock_do (self);
     } else if (g_strcmp0 (signal_name, "ErrorInfo") == 0) {
-        fpd_unlock_feedback (self, "bell-terminal");
-    } else if (g_strcmp0 (signal_name, "StateChanged") == 0) {
-        const gchar *state;
+        const gchar *info;
 
-        g_variant_get (parameters, "(&s)", &state);
-        if (g_strcmp0 (state, "FPSTATE_IDLE") == 0) {
-            if (self->priv->idle_hint && self->priv->locked_hint)
-                fpd_unlock_start_unlocking (self);
-        }
+        g_variant_get (parameters, "(&s)", &info);
+
+        g_message ("ErrorInfo: %s", info);
+        if (g_strcmp0 (info, "FINGER_NOT_RECOGNIZED") == 0)
+            fpd_unlock_feedback (self, "bell-terminal");
     }
-
 }
 
 static void
