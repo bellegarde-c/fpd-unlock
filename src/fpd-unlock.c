@@ -180,6 +180,7 @@ on_fingerprint_proxy_signal (GDBusProxy  *proxy,
 
         g_message ("Identified: %s", finger);
         fpd_unlock_do (self);
+        fpd_unlock_feedback (self, "button-released");
     } else if (g_strcmp0 (signal_name, "ErrorInfo") == 0) {
         const gchar *info;
 
