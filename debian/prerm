@@ -2,6 +2,7 @@
 set -e
 
 remove() {
+    systemctl --user --global disable fpd-unlockd
     rm -f /etc/systemd/user/fpdlistener.service
 }
 

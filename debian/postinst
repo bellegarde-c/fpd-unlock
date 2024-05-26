@@ -3,6 +3,7 @@ set -e
 
 configure() {
     systemctl --user --global mask fpdlistener.service
+    systemctl --user --global enable fpd-unlockd
 }
 
 case "$1" in
