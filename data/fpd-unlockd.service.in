@@ -7,4 +7,4 @@ ExecStartPre=/usr/bin/binder-wait android.hardware.biometrics.fingerprint@2.1::I
 ExecStart=@BIN_DIR@/fpd-unlockd
 
 [Install]
-WantedBy=default.target
+WantedBy=gnome-session-initialized.target
