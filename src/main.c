@@ -21,7 +21,7 @@ main (gint argc, gchar * argv[])
         {NULL}
     };
 
-    context = g_option_context_new ("Waydroid freezing support");
+    context = g_option_context_new ("fpd unlock");
     g_option_context_add_main_entries (context, main_entries, NULL);
 
     if (!g_option_context_parse (context, &argc, &argv, &error)) {
