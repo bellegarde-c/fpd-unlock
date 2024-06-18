@@ -138,7 +138,9 @@ fpd_set_active_session (FpdUnlock *self)
 {
     g_autoptr(GError) error = NULL;
     g_autoptr(GVariant) value = NULL;
-    g_autoptr (GVariantIter) iter;
+    g_autoptr(GVariantIter) iter;
+    g_autofree gchar *seat = NULL;
+
 
     value = g_dbus_proxy_call_sync (
         self->priv->logind_manager_proxy,
@@ -156,8 +158,8 @@ fpd_set_active_session (FpdUnlock *self)
 
     g_variant_get (value, "(a(susso))", &iter);
     while (g_variant_iter_loop (iter, "(susso)", &self->priv->session_id,
-                                NULL, NULL, NULL, &self->priv->session_path)) {
-        if (g_strcmp0 (self->priv->session_id, "c2") == 0)
+                                NULL, NULL, &seat, &self->priv->session_path)) {
+        if (g_strcmp0 (seat, "seat0") == 0)
             return;
     }
 
@@ -223,7 +225,6 @@ on_logind_session_proxy_properties_changed (GDBusProxy *proxy,
 static gboolean
 fpd_wait_for_bus (FpdUnlock *self)
 {
-
     if (self->priv->logind_manager_proxy == NULL)
         self->priv->logind_manager_proxy =
                     g_dbus_proxy_new_for_bus_sync (
@@ -323,6 +324,7 @@ fpd_unlock_finalize (GObject *fpd_unlock)
     FpdUnlock *self = FPD_UNLOCK (fpd_unlock);
 
     g_free (&self->priv->session_id);
+    g_free (&self->priv->session_path);
 
     G_OBJECT_CLASS (fpd_unlock_parent_class)->finalize (fpd_unlock);
 }
