@@ -300,6 +300,8 @@ fpd_wait_for_bus (FpdUnlock *self)
         self
     );
 
+    fpd_unlock_start_unlocking (self);
+
     return FALSE;
 }
 
