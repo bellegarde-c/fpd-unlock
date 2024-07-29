@@ -5,8 +5,10 @@ Maintainer: Cédric Bellegarde <cedric.bellegarde@adishatz.org>
 Rules-Requires-Root: no
 Build-Depends:
  debhelper-compat (= 13),
+ meson,
+ libglib2.0-dev,
 Standards-Version: 4.6.2
-Homepage: https://github.com/bellegarde-c/fpd-unlock
+Homepage: https://github.com/droidian/fpd-unlock
 
 Package: fpd-unlock
 Architecture: any
